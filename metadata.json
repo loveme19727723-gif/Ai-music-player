@@ -1,0 +1,6 @@
+{
+  "name": "AI Music World",
+  "description": "AI-powered personalized music generator, interactive music chat, lyrics studio, and audio-visual creator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

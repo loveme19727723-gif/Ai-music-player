@@ -1,0 +1,219 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user profile, credit balance, and moderation status.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Firebase Auth UID" },
+        "displayName": { "type": "string", "description": "User display name" },
+        "email": { "type": "string", "description": "User email address" },
+        "photoUrl": { "type": "string", "description": "Optional profile photo URL" },
+        "role": { "type": "string", "enum": ["user", "admin"], "description": "Account role" },
+        "blocked": { "type": "boolean", "description": "Whether account is blocked by admin" },
+        "credits": { "type": "integer", "description": "Generation credits remaining" },
+        "preferredLanguage": { "type": "string", "description": "Preferred lyric/chat language" },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Server timestamp" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Server timestamp" }
+      },
+      "required": ["userId", "displayName", "email", "role", "blocked", "credits", "preferredLanguage", "createdAt", "updatedAt"]
+    },
+    "SongRecord": {
+      "title": "SongRecord",
+      "description": "User-generated personalized AI song, lyrics, synthesis blueprint, and local media paths.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "prompt": { "type": "string" },
+        "lyrics": { "type": "string" },
+        "language": { "type": "string" },
+        "genre": { "type": "string" },
+        "style": { "type": "string" },
+        "mood": { "type": "string" },
+        "voiceType": { "type": "string" },
+        "beat": { "type": "string" },
+        "instruments": { "type": "string" },
+        "durationSec": { "type": "integer" },
+        "bpm": { "type": "integer" },
+        "musicKey": { "type": "string" },
+        "chordProgression": { "type": "array" },
+        "coverType": { "type": "string", "enum": ["dj", "classic", "romantic", "custom"] },
+        "localAudioPath": { "type": "string" },
+        "localVideoPath": { "type": "string" },
+        "localCoverPath": { "type": "string" },
+        "favorite": { "type": "boolean" },
+        "downloaded": { "type": "boolean" },
+        "playCount": { "type": "integer" },
+        "visibility": { "type": "string", "enum": ["private", "public"] },
+        "variationIndex": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "title", "recipientName", "prompt", "lyrics", "language", "genre", "style",
+        "mood", "voiceType", "beat", "instruments", "durationSec", "bpm", "musicKey",
+        "chordProgression", "coverType", "favorite", "downloaded", "playCount", "visibility",
+        "variationIndex", "createdAt", "updatedAt"
+      ]
+    },
+    "PlaylistRecord": {
+      "title": "PlaylistRecord",
+      "description": "User playlist containing ordered song IDs.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "songIds": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "description", "songIds", "createdAt", "updatedAt"]
+    },
+    "ChatMessageRecord": {
+      "title": "ChatMessageRecord",
+      "description": "AI Music Chat conversation history item.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "sender": { "type": "string", "enum": ["user", "ai"] },
+        "text": { "type": "string" },
+        "songId": { "type": "string" },
+        "songTitle": { "type": "string" },
+        "suggestions": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "sender", "text", "suggestions", "createdAt"]
+    },
+    "PublicSongRecord": {
+      "title": "PublicSongRecord",
+      "description": "Community-shared and Featured songs visible across Home and Explore.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "creatorName": { "type": "string" },
+        "title": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "lyrics": { "type": "string" },
+        "language": { "type": "string" },
+        "genre": { "type": "string" },
+        "style": { "type": "string" },
+        "mood": { "type": "string" },
+        "voiceType": { "type": "string" },
+        "instruments": { "type": "string" },
+        "durationSec": { "type": "integer" },
+        "bpm": { "type": "integer" },
+        "musicKey": { "type": "string" },
+        "chordProgression": { "type": "array" },
+        "coverType": { "type": "string", "enum": ["dj", "classic", "romantic", "custom"] },
+        "visibility": { "type": "string", "enum": ["public", "hidden"] },
+        "featuredSection": { "type": "string", "enum": ["none", "featured", "trending", "dj", "classic", "romantic", "editors_choice", "artists"] },
+        "playCount": { "type": "integer" },
+        "likeCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "userId", "creatorName", "title", "recipientName", "lyrics", "language", "genre",
+        "style", "mood", "voiceType", "instruments", "durationSec", "bpm", "musicKey",
+        "chordProgression", "coverType", "visibility", "featuredSection", "playCount",
+        "likeCount", "createdAt", "updatedAt"
+      ]
+    },
+    "CategoryRecord": {
+      "title": "CategoryRecord",
+      "description": "Music category managed by administrators.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "group": { "type": "string", "enum": ["DJ", "NORMAL", "CLASSIC", "OTHER", "CUSTOM"] },
+        "active": { "type": "boolean" },
+        "sortOrder": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "group", "active", "sortOrder", "createdAt", "updatedAt"]
+    },
+    "ReportRecord": {
+      "title": "ReportRecord",
+      "description": "Moderation report submitted by users for admin review.",
+      "type": "object",
+      "properties": {
+        "reporterId": { "type": "string" },
+        "songId": { "type": "string" },
+        "songTitle": { "type": "string" },
+        "reason": { "type": "string" },
+        "status": { "type": "string", "enum": ["open", "resolved", "dismissed"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reporterId", "songId", "songTitle", "reason", "status", "createdAt", "updatedAt"]
+    },
+    "AppSettingsRecord": {
+      "title": "AppSettingsRecord",
+      "description": "Global application and external AI provider configuration managed by admins.",
+      "type": "object",
+      "properties": {
+        "providerName": { "type": "string" },
+        "externalMusicApiUrl": { "type": "string" },
+        "externalMusicApiEnabled": { "type": "boolean" },
+        "externalVideoApiEnabled": { "type": "boolean" },
+        "defaultCredits": { "type": "integer" },
+        "maintenanceMode": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["providerName", "externalMusicApiUrl", "externalMusicApiEnabled", "externalVideoApiEnabled", "defaultCredits", "maintenanceMode", "updatedAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Admin role registry entry.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "grantedBy": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "grantedBy", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profile and credit state"
+    },
+    "/users/{userId}/songs/{songId}": {
+      "schema": { "$ref": "#/entities/SongRecord" },
+      "description": "Personal user-generated songs and library"
+    },
+    "/users/{userId}/playlists/{playlistId}": {
+      "schema": { "$ref": "#/entities/PlaylistRecord" },
+      "description": "Personal user playlists"
+    },
+    "/users/{userId}/chatMessages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessageRecord" },
+      "description": "Personal AI Music Chat history"
+    },
+    "/songs_public/{songId}": {
+      "schema": { "$ref": "#/entities/PublicSongRecord" },
+      "description": "Public community feed and admin-curated featured music"
+    },
+    "/categories/{categoryId}": {
+      "schema": { "$ref": "#/entities/CategoryRecord" },
+      "description": "Admin-managed music categories"
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/ReportRecord" },
+      "description": "Song moderation reports"
+    },
+    "/app_settings/{settingId}": {
+      "schema": { "$ref": "#/entities/AppSettingsRecord" },
+      "description": "App configuration settings"
+    },
+    "/admins/{adminUid}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Admin role records"
+    }
+  }
+}

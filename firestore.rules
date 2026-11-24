@@ -1,0 +1,375 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        ('email' in request.auth.token &&
+         request.auth.token.email == 'chapchup481@gmail.com' &&
+         'email_verified' in request.auth.token &&
+         request.auth.token.email_verified == true) ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isValidUserProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+             data.email is string && data.email.size() <= 120 &&
+             (!('photoUrl' in data) || (data.photoUrl is string && data.photoUrl.size() <= 500)) &&
+             data.role in ['user', 'admin'] &&
+             data.blocked is bool &&
+             data.credits is int && data.credits >= 0 && data.credits <= 1000000 &&
+             data.preferredLanguage is string && data.preferredLanguage.size() >= 1 && data.preferredLanguage.size() <= 30 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidSongRecord(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.recipientName is string && data.recipientName.size() <= 60 &&
+             data.prompt is string && data.prompt.size() <= 1000 &&
+             data.lyrics is string && data.lyrics.size() <= 12000 &&
+             data.language is string && data.language.size() >= 1 && data.language.size() <= 40 &&
+             data.genre is string && data.genre.size() >= 1 && data.genre.size() <= 50 &&
+             data.style is string && data.style.size() <= 80 &&
+             data.mood is string && data.mood.size() >= 1 && data.mood.size() <= 40 &&
+             data.voiceType is string && data.voiceType.size() >= 1 && data.voiceType.size() <= 40 &&
+             data.beat is string && data.beat.size() <= 60 &&
+             data.instruments is string && data.instruments.size() <= 160 &&
+             data.durationSec is int && data.durationSec >= 10 && data.durationSec <= 600 &&
+             data.bpm is int && data.bpm >= 40 && data.bpm <= 220 &&
+             data.musicKey is string && data.musicKey.size() >= 1 && data.musicKey.size() <= 30 &&
+             data.chordProgression is list && data.chordProgression.size() <= 16 &&
+             (data.chordProgression.size() == 0 || data.chordProgression[0] is string) &&
+             data.coverType in ['dj', 'classic', 'romantic', 'custom'] &&
+             (!('localAudioPath' in data) || (data.localAudioPath is string && data.localAudioPath.size() <= 300)) &&
+             (!('localVideoPath' in data) || (data.localVideoPath is string && data.localVideoPath.size() <= 300)) &&
+             (!('localCoverPath' in data) || (data.localCoverPath is string && data.localCoverPath.size() <= 300)) &&
+             data.favorite is bool &&
+             data.downloaded is bool &&
+             data.playCount is int && data.playCount >= 0 &&
+             data.visibility in ['private', 'public'] &&
+             data.variationIndex is int && data.variationIndex >= 1 && data.variationIndex <= 10 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidPlaylist(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.description is string && data.description.size() <= 250 &&
+             data.songIds is list && data.songIds.size() <= 100 &&
+             (data.songIds.size() == 0 || data.songIds[0] is string) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidChatMessage(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.sender in ['user', 'ai'] &&
+             data.text is string && data.text.size() >= 1 && data.text.size() <= 8000 &&
+             (!('songId' in data) || (data.songId is string && data.songId.size() <= 128)) &&
+             (!('songTitle' in data) || (data.songTitle is string && data.songTitle.size() <= 120)) &&
+             data.suggestions is list && data.suggestions.size() <= 8 &&
+             (data.suggestions.size() == 0 || data.suggestions[0] is string) &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    function isValidPublicSong(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+             data.creatorName is string && data.creatorName.size() >= 1 && data.creatorName.size() <= 80 &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+             data.recipientName is string && data.recipientName.size() <= 60 &&
+             data.lyrics is string && data.lyrics.size() <= 12000 &&
+             data.language is string && data.language.size() >= 1 && data.language.size() <= 40 &&
+             data.genre is string && data.genre.size() >= 1 && data.genre.size() <= 50 &&
+             data.style is string && data.style.size() <= 80 &&
+             data.mood is string && data.mood.size() >= 1 && data.mood.size() <= 40 &&
+             data.voiceType is string && data.voiceType.size() >= 1 && data.voiceType.size() <= 40 &&
+             data.instruments is string && data.instruments.size() <= 160 &&
+             data.durationSec is int && data.durationSec >= 10 && data.durationSec <= 600 &&
+             data.bpm is int && data.bpm >= 40 && data.bpm <= 220 &&
+             data.musicKey is string && data.musicKey.size() >= 1 && data.musicKey.size() <= 30 &&
+             data.chordProgression is list && data.chordProgression.size() <= 16 &&
+             (data.chordProgression.size() == 0 || data.chordProgression[0] is string) &&
+             data.coverType in ['dj', 'classic', 'romantic', 'custom'] &&
+             data.visibility in ['public', 'hidden'] &&
+             data.featuredSection in ['none', 'featured', 'trending', 'dj', 'classic', 'romantic', 'editors_choice', 'artists'] &&
+             data.playCount is int && data.playCount >= 0 &&
+             data.likeCount is int && data.likeCount >= 0 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidCategory(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 60 &&
+             data.group in ['DJ', 'NORMAL', 'CLASSIC', 'OTHER', 'CUSTOM'] &&
+             data.active is bool &&
+             data.sortOrder is int && data.sortOrder >= 0 && data.sortOrder <= 1000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidReport(data) {
+      return data.reporterId is string && data.reporterId.size() >= 1 && data.reporterId.size() <= 128 &&
+             data.songId is string && data.songId.size() >= 1 && data.songId.size() <= 128 &&
+             data.songTitle is string && data.songTitle.size() >= 1 && data.songTitle.size() <= 120 &&
+             data.reason is string && data.reason.size() >= 1 && data.reason.size() <= 500 &&
+             data.status in ['open', 'resolved', 'dismissed'] &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAppSettings(data) {
+      return data.providerName is string && data.providerName.size() >= 1 && data.providerName.size() <= 80 &&
+             data.externalMusicApiUrl is string && data.externalMusicApiUrl.size() <= 300 &&
+             data.externalMusicApiEnabled is bool &&
+             data.externalVideoApiEnabled is bool &&
+             data.defaultCredits is int && data.defaultCredits >= 0 && data.defaultCredits <= 10000 &&
+             data.maintenanceMode is bool &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+
+      allow create: if isValidId(userId) &&
+                       isOwner(userId) &&
+                       incoming().keys().hasAll(['userId', 'displayName', 'email', 'role', 'blocked', 'credits', 'preferredLanguage', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'displayName', 'email', 'photoUrl', 'role', 'blocked', 'credits', 'preferredLanguage', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().role == 'user' &&
+                       incoming().blocked == false &&
+                       incoming().credits <= 100;
+
+      allow update: if isValidId(userId) &&
+                       isSignedIn() &&
+                       isValidUserProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         isAdmin() ||
+                         (
+                           isOwner(userId) &&
+                           incoming().role == existing().role &&
+                           incoming().blocked == existing().blocked &&
+                           incoming().email == existing().email && (
+                             incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoUrl', 'preferredLanguage', 'updatedAt']) ||
+                             (
+                               incoming().diff(existing()).affectedKeys().hasOnly(['credits', 'updatedAt']) &&
+                               incoming().credits >= 0 &&
+                               incoming().credits <= existing().credits
+                             )
+                           )
+                         )
+                       );
+
+      allow delete: if isValidId(userId) && isAdmin();
+
+      match /songs/{songId} {
+        allow get: if isValidId(userId) && isValidId(songId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && (isOwner(userId) || isAdmin());
+
+        allow create: if isValidId(userId) && isValidId(songId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'title', 'recipientName', 'prompt', 'lyrics', 'language', 'genre', 'style',
+                           'mood', 'voiceType', 'beat', 'instruments', 'durationSec', 'bpm', 'musicKey',
+                           'chordProgression', 'coverType', 'favorite', 'downloaded', 'playCount', 'visibility',
+                           'variationIndex', 'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'title', 'recipientName', 'prompt', 'lyrics', 'language', 'genre', 'style',
+                           'mood', 'voiceType', 'beat', 'instruments', 'durationSec', 'bpm', 'musicKey',
+                           'chordProgression', 'coverType', 'localAudioPath', 'localVideoPath', 'localCoverPath',
+                           'favorite', 'downloaded', 'playCount', 'visibility', 'variationIndex', 'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidSongRecord(incoming(), userId);
+
+        allow update: if isValidId(userId) && isValidId(songId) &&
+                         (isOwner(userId) || isAdmin()) &&
+                         isValidSongRecord(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'title', 'lyrics', 'style', 'mood', 'localAudioPath', 'localVideoPath',
+                           'localCoverPath', 'favorite', 'downloaded', 'playCount', 'visibility', 'updatedAt'
+                         ]);
+
+        allow delete: if isValidId(userId) && isValidId(songId) && (isOwner(userId) || isAdmin());
+      }
+
+      match /playlists/{playlistId} {
+        allow get: if isValidId(userId) && isValidId(playlistId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && (isOwner(userId) || isAdmin());
+
+        allow create: if isValidId(userId) && isValidId(playlistId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll(['userId', 'name', 'description', 'songIds', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'name', 'description', 'songIds', 'createdAt', 'updatedAt']) &&
+                         isValidPlaylist(incoming(), userId);
+
+        allow update: if isValidId(userId) && isValidId(playlistId) &&
+                         isOwner(userId) &&
+                         isValidPlaylist(incoming(), userId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'description', 'songIds', 'updatedAt']);
+
+        allow delete: if isValidId(userId) && isValidId(playlistId) && (isOwner(userId) || isAdmin());
+      }
+
+      match /chatMessages/{messageId} {
+        allow get: if isValidId(userId) && isValidId(messageId) && (isOwner(userId) || isAdmin());
+        allow list: if isValidId(userId) && (isOwner(userId) || isAdmin());
+
+        allow create: if isValidId(userId) && isValidId(messageId) &&
+                         isOwner(userId) &&
+                         incoming().keys().hasAll(['userId', 'sender', 'text', 'suggestions', 'createdAt']) &&
+                         incoming().keys().hasOnly(['userId', 'sender', 'text', 'songId', 'songTitle', 'suggestions', 'createdAt']) &&
+                         isValidChatMessage(incoming(), userId);
+
+        allow delete: if isValidId(userId) && isValidId(messageId) && (isOwner(userId) || isAdmin());
+      }
+    }
+
+    match /songs_public/{songId} {
+      allow get: if isValidId(songId) && isSignedIn() && (existing().visibility == 'public' || existing().userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.visibility == 'public' || resource.data.userId == request.auth.uid || isAdmin());
+
+      allow create: if isValidId(songId) &&
+                       isSignedIn() &&
+                       incoming().keys().hasAll([
+                         'userId', 'creatorName', 'title', 'recipientName', 'lyrics', 'language', 'genre',
+                         'style', 'mood', 'voiceType', 'instruments', 'durationSec', 'bpm', 'musicKey',
+                         'chordProgression', 'coverType', 'visibility', 'featuredSection', 'playCount',
+                         'likeCount', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'creatorName', 'title', 'recipientName', 'lyrics', 'language', 'genre',
+                         'style', 'mood', 'voiceType', 'instruments', 'durationSec', 'bpm', 'musicKey',
+                         'chordProgression', 'coverType', 'visibility', 'featuredSection', 'playCount',
+                         'likeCount', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidPublicSong(incoming()) &&
+                       incoming().userId == request.auth.uid && (
+                         isAdmin() ||
+                         (
+                           incoming().visibility == 'public' &&
+                           incoming().featuredSection == 'none' &&
+                           incoming().playCount == 0 &&
+                           incoming().likeCount == 0
+                         )
+                       );
+
+      allow update: if isValidId(songId) &&
+                       isSignedIn() &&
+                       isValidPublicSong(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt && (
+                         isAdmin() ||
+                         (
+                           existing().userId == request.auth.uid &&
+                           incoming().featuredSection == existing().featuredSection &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['title', 'lyrics', 'visibility', 'updatedAt'])
+                         ) ||
+                         (
+                           existing().visibility == 'public' &&
+                           incoming().diff(existing()).affectedKeys().hasOnly(['playCount', 'likeCount', 'updatedAt']) &&
+                           incoming().playCount >= existing().playCount &&
+                           incoming().playCount <= existing().playCount + 1 &&
+                           incoming().likeCount >= existing().likeCount &&
+                           incoming().likeCount <= existing().likeCount + 1
+                         )
+                       );
+
+      allow delete: if isValidId(songId) && isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+    }
+
+    match /categories/{categoryId} {
+      allow get: if isValidId(categoryId) && isSignedIn() && (existing().active == true || isAdmin());
+      allow list: if isSignedIn() && (resource.data.active == true || isAdmin());
+
+      allow create: if isValidId(categoryId) &&
+                       isAdmin() &&
+                       incoming().keys().hasAll(['name', 'group', 'active', 'sortOrder', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['name', 'group', 'active', 'sortOrder', 'createdAt', 'updatedAt']) &&
+                       isValidCategory(incoming());
+
+      allow update: if isValidId(categoryId) &&
+                       isAdmin() &&
+                       isValidCategory(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'group', 'active', 'sortOrder', 'updatedAt']);
+
+      allow delete: if isValidId(categoryId) && isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow get: if isValidId(reportId) && isSignedIn() && (existing().reporterId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.reporterId == request.auth.uid || isAdmin());
+
+      allow create: if isValidId(reportId) &&
+                       isSignedIn() &&
+                       incoming().keys().hasAll(['reporterId', 'songId', 'songTitle', 'reason', 'status', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['reporterId', 'songId', 'songTitle', 'reason', 'status', 'createdAt', 'updatedAt']) &&
+                       isValidReport(incoming()) &&
+                       incoming().reporterId == request.auth.uid &&
+                       incoming().status == 'open';
+
+      allow update: if isValidId(reportId) &&
+                       isAdmin() &&
+                       isValidReport(incoming()) &&
+                       incoming().reporterId == existing().reporterId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      allow delete: if isValidId(reportId) && isAdmin();
+    }
+
+    match /app_settings/{settingId} {
+      allow get: if isSignedIn() && settingId == 'config';
+      allow list: if isAdmin();
+
+      allow create, update: if isValidId(settingId) &&
+                               isAdmin() &&
+                               incoming().keys().hasAll(['providerName', 'externalMusicApiUrl', 'externalMusicApiEnabled', 'externalVideoApiEnabled', 'defaultCredits', 'maintenanceMode', 'updatedAt']) &&
+                               incoming().keys().hasOnly(['providerName', 'externalMusicApiUrl', 'externalMusicApiEnabled', 'externalVideoApiEnabled', 'defaultCredits', 'maintenanceMode', 'updatedAt']) &&
+                               isValidAppSettings(incoming());
+
+      allow delete: if isValidId(settingId) && isAdmin();
+    }
+
+    match /admins/{adminUid} {
+      allow get: if isValidId(adminUid) && isSignedIn() && (request.auth.uid == adminUid || isAdmin());
+      allow list, create, update, delete: if isValidId(adminUid) && isAdmin();
+    }
+  }
+}
